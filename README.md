@@ -58,20 +58,6 @@ void TaskAnalogRead(void *pvParameters) {
   }
 }
 
-Algorithm:
-Initialize Serial communication and configure input/output pins.
-Create a binary semaphore for mutual exclusion on Serial printing.
-Create two tasks:
-Task 1: Read digital push button state.
-Task 2: Read analog sensor value.
-In each task, take the semaphore before printing to Serial.
-Print the respective value.
-Release the semaphore.
-Delay task for a specific interval and repeat indefinitely.
-
-Explanation:
- Two FreeRTOS tasks run concurrently — each prints data safely to the Serial Monitor using a mutex semaphore.
-
 🔹 Q2. Inter-Task Communication Using Global Variable (Touch Sensor)
 Question:
 Demonstrate the Inter task communication using the concept of global variable.
@@ -115,17 +101,6 @@ void TaskLEDControl(void *pvParameters) {
     vTaskDelay(200 / portTICK_PERIOD_MS);
   }
 }
-
-Algorithm:
-Initialize input (touch sensor) and output (LED) pins.
-Define a global variable for touch state.
-Create two tasks:
-Task 1: Read touch sensor and update global variable.
-Task 2: Read global variable and control LED accordingly.
-Continuously update and read the global variable in each task.
-Delay each task to allow periodic execution.
-Explanation:
- The tasks share a global variable touchState for inter-task communication.
 
 🔹 Q3. FreeRTOS Queue: Producer–Consumer
 Question:
@@ -178,17 +153,6 @@ void ConsumerTask(void *pvParameters) {
   }
 }
 
-Algorithm:
-Initialize Serial communication.
-Create a queue to hold integer values.
-Create two tasks:
-Producer: Generate an integer and send it to the queue.
-Consumer: Receive integer from the queue and print it.
-In each task, use queue send/receive functions with proper blocking.
-Delay each task for periodic execution.
-Explanation:
- Producer sends integers through a FreeRTOS queue; consumer receives and prints them.
-
 🔹 Q4. Two Independent Tasks – 2-bit and 3-bit Counters
 Write an arduino sketch to perform the following:
 Create 2 independent tasks.
@@ -230,15 +194,6 @@ void Task3BitCounter(void *pvParameters) {
   }
 }
 
-Algorithm:
-Initialize Serial and configure LED pins as outputs.
-Create two tasks:
-Task 1: Implement a 2-bit counter using LEDs.
-Task 2: Implement a 3-bit counter and print value to Serial.
-Update LEDs and Serial with current counter values.
-Delay each task for periodic execution.
-Repeat counting indefinitely.
-
 🔹 Q5. I2C Master–Slave Communication
 Write an Arduino program using the I2C (Inter-Integrated Circuit) protocol to demonstrate
 communication between a master and a slave device.
@@ -251,51 +206,54 @@ Master Code:
 int counter = 0;
 
 void setup() {
-  Wire.begin(); 
+  Wire.begin();            // Start I2C as Master
+  pinMode(13, OUTPUT);     // Built-in LED
+  Serial.begin(9600);
+  Serial.println("Master Ready");
 }
 
 void loop() {
-  Wire.beginTransmission(8);
-  Wire.write("x is ");
-  Wire.write(counter);
-  Wire.endTransmission();
-  counter++;
-  delay(1000);
-}
+  Wire.beginTransmission(8);   // Slave address = 8
+  Wire.write("x is ");         // Send text
+  Wire.write(counter);         // Send number as a byte
+  Wire.endTransmission();      // End I2C transmission
 
+  Serial.print("Sent: x is ");
+  Serial.println(counter);
+
+  digitalWrite(13, HIGH);      // Blink LED to show sending
+  delay(100);
+  digitalWrite(13, LOW);
+
+  counter++;
+  delay(1000);                 // Wait 1 second
+}
 
 Slave Code:
 #include <Wire.h>
 
 void setup() {
+  Wire.begin(8);               // Join I2C bus with address #8
+  Wire.onReceive(receiveEvent); // Register event
   Serial.begin(9600);
-  Wire.begin(8);
-  Wire.onReceive(receiveEvent);
+  pinMode(13, OUTPUT);         // Built-in LED
+  Serial.println("Slave Ready");
 }
 
-void loop() {}
+void loop() {
+  // Nothing here - all happens when data arrives
+}
 
 void receiveEvent(int howMany) {
+  digitalWrite(13, HIGH);      // LED ON when data received
   Serial.print("Received: ");
   while (Wire.available()) {
-    char c = Wire.read();
+    char c = Wire.read();      // Read each byte
     Serial.print(c);
   }
   Serial.println();
+  digitalWrite(13, LOW);       // Turn LED off
 }
-
-Algorithm:
- Master:
-Initialize I2C as Master.
-In a loop, send data (counter or message) to Slave.
-Increment counter after each transmission.
-Delay before next transmission.
-Slave:
-Initialize I2C as Slave with a specific address.
-Set up an event handler to receive data.
-In the event handler, read incoming data and print to Serial.
-Wait for the next transmission.
-
 
 🔹 Q6. I2C RGB LED Blink (Slave controls RGB LED)
 Perform Arduino to Arduino communication via I2C to demonstrate RGB LED blink. (RGB LED - Slave).
@@ -339,22 +297,6 @@ void receiveEvent(int howMany) {
   digitalWrite(BLUE, color == 2);
 }
 
-
-
-Algorithm
-Master:
-Initialize I2C as Master.
-Send color code to Slave repeatedly.
-Cycle color code in loop.
-Delay between transmissions.
-Slave:
-Initialize RGB LED pins as outputs.
-Initialize I2C as Slave with specific address.
-Set up receive event handler to read color code.
-Turn on corresponding LED based on color code.
-
-
-
 🔹 Q7. I2C – 3-bit Counter LEDs
 Write an arduino sketch to perform the following using I2C communication.
 Interface three LED’s on the slave side.
@@ -394,17 +336,6 @@ void receiveEvent(int howMany) {
   for (int i = 0; i < 3; i++)
     digitalWrite(leds[i], bitRead(count, i));
 }
-
-Algorithm
-Master:
-Initialize I2C as Master.
-Send counter value (0–7) to Slave in loop.
-Delay between transmissions.
-Slave:
-Initialize 3 LED pins as outputs.
-Initialize I2C as Slave with specific address.
-Set up receive event handler to read counter value.
-Display counter value on LEDs using bit operations.
 
 🔹 Q8. UART Calculator
 Write an Arduino program using Serial Communication (UART) to design a simple calculator that performs basic arithmetic operations.
@@ -449,16 +380,6 @@ void loop() {
   }
 }
 
-Algorithm
-Initialize Serial communication.
-Wait for input of two numbers and an operator.
-Read first number, operator, and second number.
-Perform calculation based on operator (+, −, *, /).
-Handle divide-by-zero and invalid operator errors.
-Print result to Serial.
-Repeat for next input.
-
-
 🔹 Q9. UART 4-Digit PIN Check
 Write an arduino sketch to perform the following Serial Communication (UART):
 Provide a 4 digit pin via serial monitor.
@@ -486,15 +407,6 @@ void loop() {
     }
   }
 }
-
-Algorithm
-Initialize Serial and configure buzzer pin as output.
-Wait for user to input 4-digit PIN.
-Read input from Serial.
-Compare input with correct PIN.
-If correct, print welcome message.
-If incorrect, print error and trigger buzzer.
-Repeat indefinitely.
 
 🔹 Q10. UART Number & LED
 Write an arduino sketch to perform the following Serial Communication (UART):
@@ -533,15 +445,3 @@ void loop() {
     }
   }
 }
-
-Algorithm
-Initialize Serial and configure LED pins as output.
-Wait for user to input a number.
-Read number from Serial.
-Compare number with threshold (e.g., 50).
-Turn on corresponding LED based on value:
-Greater than threshold → RED
-Less than threshold → GREEN
-Equal → YELLOW
-Repeat for next input.
-
